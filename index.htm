@@ -1,0 +1,506 @@
+cat > /mnt/user-data/outputs/fx_stage_plan.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX 管理プラン 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f5f5f3; color: #111; font-family: 'Noto Sans JP', sans-serif; min-height: 100vh; }
+
+  .tab-nav { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #ddd; display: flex; }
+  .tab-btn { flex: 1; padding: 12px 4px; font-size: 12px; font-weight: 500; font-family: 'Noto Sans JP', sans-serif; border: none; background: transparent; color: #888; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab-btn.active { color: #111; border-bottom-color: #111; }
+
+  .page { display: none; padding: 20px 16px 48px; max-width: 900px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  .page-header { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #111; }
+  .page-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+  .page-title { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .page-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: #555; line-height: 1.9; }
+
+  .base-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #ccc; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+  @media (min-width: 560px) { .base-strip { grid-template-columns: repeat(5, 1fr); } }
+  .base-cell { background: #f5f5f5; padding: 12px 10px; text-align: center; }
+  .base-cell .bl { font-size: 9px; color: #555; font-family: 'DM Mono', monospace; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .base-cell .bv { font-size: 13px; font-weight: 700; color: #111; font-family: 'DM Mono', monospace; }
+  .bv.pos { color: #15803d; }
+
+  .stages { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+  .stage { border-radius: 6px; overflow: hidden; border: 1.5px solid #ccc; }
+  .stage-left { padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .stage-name { font-size: 9px; font-family: 'DM Mono', monospace; letter-spacing: 0.12em; color: #333; font-weight: 700; margin-bottom: 2px; }
+  .stage-amount { font-size: 20px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .stage-sub { font-size: 10px; color: #444; margin-top: 2px; }
+  .stage-tag { font-size: 9px; font-family: 'DM Mono', monospace; padding: 3px 8px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+  .stage-right { padding: 12px 14px; background: #fff; border-top: 1px solid #e5e5e5; }
+  .metrics-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+  @media (min-width: 560px) { .metrics-row { grid-template-columns: repeat(4, 1fr); } }
+  .m-label { font-size: 9px; font-family: 'DM Mono', monospace; color: #555; margin-bottom: 3px; }
+  .m-val { font-size: 15px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .m-val.pos { color: #15803d; }
+  .m-val.neg { color: #b91c1c; }
+  .m-val.warn { color: #b45309; }
+  .conds { border-top: 1px solid #e5e5e5; padding-top: 8px; display: flex; flex-wrap: wrap; gap: 3px 12px; }
+  .cond-label { font-size: 10px; font-weight: 700; color: #111; margin-bottom: 2px; font-family: 'DM Mono', monospace; width: 100%; }
+  .cond-item { font-size: 10px; color: #333; font-family: 'DM Mono', monospace; }
+  .cond-item::before { content: "□ "; color: #888; }
+
+  .stage-now { border-color: #86efac; }
+  .stage-now .stage-left { background: #f0fdf4; }
+  .stage-now .stage-amount { color: #15803d; }
+  .stage-now .stage-tag { background: #dcfce7; color: #15803d; }
+  .stage-s1 { border-color: #93c5fd; }
+  .stage-s1 .stage-left { background: #eff6ff; }
+  .stage-s1 .stage-amount { color: #1d4ed8; }
+  .stage-s1 .stage-tag { background: #dbeafe; color: #1d4ed8; }
+  .stage-s2 { border-color: #fdba74; }
+  .stage-s2 .stage-left { background: #fff7ed; }
+  .stage-s2 .stage-amount { color: #c2410c; }
+  .stage-s2 .stage-tag { background: #ffedd5; color: #c2410c; }
+  .stage-s3 { border-color: #fca5a5; }
+  .stage-s3 .stage-left { background: #fef2f2; }
+  .stage-s3 .stage-amount { color: #b91c1c; }
+  .stage-s3 .stage-tag { background: #fee2e2; color: #b91c1c; }
+
+  .arrow-row { text-align: center; color: #aaa; font-size: 16px; padding: 2px 0; }
+
+  .down-section { background: #fff5f5; border: 1.5px solid #fca5a5; border-left: 4px solid #b91c1c; border-radius: 0; padding: 12px 14px; margin-bottom: 20px; }
+  .down-title { font-size: 10px; font-family: 'DM Mono', monospace; color: #b91c1c; letter-spacing: 0.1em; margin-bottom: 8px; font-weight: 700; }
+  .down-items { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .down-item { font-size: 11px; color: #222; font-family: 'DM Mono', monospace; }
+  .down-item::before { content: "▸ "; color: #b91c1c; }
+
+  .plan-cards { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
+  @media (min-width: 640px) { .plan-cards { grid-template-columns: repeat(3, 1fr); } }
+  .plan-card { background: #fff; border: 0.5px solid #ddd; border-radius: 10px; padding: 16px; }
+  .plan-card-a { border-top: 3px solid #1D9E75; }
+  .plan-card-b { border-top: 3px solid #378ADD; }
+  .plan-card-c { border-top: 3px solid #EF9F27; }
+  .plan-label { font-size: 10px; color: #666; font-weight: 500; margin-bottom: 4px; }
+  .plan-goal { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .plan-goal-a { color: #1D9E75; }
+  .plan-goal-b { color: #378ADD; }
+  .plan-goal-c { color: #EF9F27; }
+  .plan-desc { font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.7; }
+  .plan-row { font-size: 11px; color: #555; line-height: 2.1; font-family: 'DM Mono', monospace; }
+  .plan-row strong { color: #111; }
+
+  .metric-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  @media (min-width: 560px) { .metric-strip { grid-template-columns: repeat(4, 1fr); } }
+  .metric-card { background: #fff; border-radius: 8px; padding: 12px; border: 0.5px solid #ddd; }
+  .metric-card .ml { font-size: 11px; color: #555; margin-bottom: 4px; }
+  .metric-card .mv { font-size: 18px; font-weight: 700; color: #111; }
+  .metric-card .ms { font-size: 10px; color: #888; margin-top: 2px; }
+  .mv.green { color: #15803d; }
+
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-bottom: 10px; font-size: 12px; color: #555; }
+  .chart-wrap { position: relative; width: 100%; height: 260px; margin-bottom: 16px; }
+
+  .note-box { background: #f9f9f7; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #444; line-height: 1.9; margin-bottom: 16px; border: 0.5px solid #ddd; }
+  .note-box strong { color: #111; }
+
+  /* June page */
+  .jun-section { margin-bottom: 24px; }
+  .jun-section-title { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 700; letter-spacing: 0.1em; color: #555; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #e5e5e5; }
+
+  .target-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  @media (min-width: 560px) { .target-grid { grid-template-columns: repeat(4, 1fr); } }
+  .target-card { background: #fff; border-radius: 8px; padding: 12px 14px; border: 0.5px solid #ddd; }
+  .target-card .tl { font-size: 10px; color: #666; margin-bottom: 4px; }
+  .target-card .tv-min { font-size: 13px; font-weight: 700; color: #b45309; }
+  .target-card .tv-ideal { font-size: 13px; font-weight: 700; color: #15803d; }
+  .target-card .ts { font-size: 10px; color: #888; margin-top: 2px; }
+
+  .checklist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .check-item { background: #fff; border: 0.5px solid #ddd; border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .check-box { width: 18px; height: 18px; min-width: 18px; border: 2px solid #ccc; border-radius: 4px; margin-top: 1px; }
+  .check-text { font-size: 13px; color: #111; line-height: 1.6; }
+  .check-sub { font-size: 11px; color: #666; margin-top: 2px; }
+
+  .ng-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .ng-item { background: #fff5f5; border: 0.5px solid #fca5a5; border-left: 3px solid #b91c1c; border-radius: 0; padding: 10px 14px; font-size: 12px; color: #222; line-height: 1.6; }
+  .ng-item::before { content: "✕ "; color: #b91c1c; font-weight: 700; }
+
+  .summary-box { background: #111; color: #fff; border-radius: 8px; padding: 16px 18px; margin-bottom: 20px; }
+  .summary-box .sl { font-size: 10px; color: #888; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .summary-box .sv { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.7; }
+
+  .footer { border-top: 1px solid #ddd; padding-top: 12px; }
+  .footer-note { font-size: 10px; color: #666; font-family: 'DM Mono', monospace; line-height: 1.9; margin-bottom: 4px; }
+  .footer-date { font-size: 10px; color: #999; font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('stage', this)">リスク管理プラン</button>
+  <button class="tab-btn" onclick="switchTab('roadmap', this)">年間ロードマップ</button>
+  <button class="tab-btn" onclick="switchTab('june', this)">6月チェック</button>
+</nav>
+
+<!-- PAGE 1: Stage Plan -->
+<div id="page-stage" class="page active">
+  <div class="page-header">
+    <div class="page-label">FX Risk Management</div>
+    <div class="page-title">リスク管理 ステージプラン</div>
+    <div class="page-sub">基準：1月以降 実績データ　月5回 / 勝率40% / 損失基準¥10,019<br>月期待収益 = 実績¥18,166 × リスク倍率</div>
+  </div>
+
+  <div class="base-strip">
+    <div class="base-cell"><div class="bl">TOTAL ENTRY</div><div class="bv">25回</div></div>
+    <div class="base-cell"><div class="bl">WIN RATE</div><div class="bv pos">40.0%</div></div>
+    <div class="base-cell"><div class="bl">AVG WIN RR</div><div class="bv pos">+1.62</div></div>
+    <div class="base-cell"><div class="bl">TOTAL P&L</div><div class="bv pos">+¥81,725</div></div>
+    <div class="base-cell"><div class="bl">CAPITAL</div><div class="bv">¥2,000,000</div></div>
+  </div>
+
+  <div class="stages">
+    <div class="stage stage-now">
+      <div class="stage-left">
+        <div><div class="stage-name">NOW — START</div><div class="stage-amount">¥30,000</div><div class="stage-sub">/ トレード</div></div>
+        <div class="stage-tag">今すぐ移行</div>
+      </div>
+      <div class="stage-right">
+        <div class="metrics-row">
+          <div><div class="m-label">月平均利益合計</div><div class="m-val pos">+¥126,000</div></div>
+          <div><div class="m-label">月平均損失合計</div><div class="m-val neg">-¥72,000</div></div>
+          <div><div class="m-label">月純期待収益</div><div class="m-val pos">+¥54,000</div></div>
+          <div><div class="m-label">最大同時リスク</div><div class="m-val warn">¥120,000</div></div>
+        </div>
+        <div class="conds"><span class="cond-label">▶ 移行条件</span><span class="cond-item">条件なし・本日から</span></div>
+      </div>
+    </div>
+    <div class="arrow-row">↓</div>
+    <div class="stage stage-s1">
+      <div class="stage-left">
+        <div><div class="stage-name">STAGE 1</div><div class="stage-amount">¥40,000</div><div class="stage-sub">/ トレード</div></div>
+        <div class="stage-tag">STAGE 1</div>
+      </div>
+      <div class="stage-right">
+        <div class="metrics-row">
+          <div><div class="m-label">月平均利益合計</div><div class="m-val pos">+¥169,000</div></div>
+          <div><div class="m-label">月平均損失合計</div><div class="m-val neg">-¥96,000</div></div>
+          <div><div class="m-label">月純期待収益</div><div class="m-val pos">+¥73,000</div></div>
+          <div><div class="m-label">最大同時リスク</div><div class="m-val warn">¥160,000</div></div>
+        </div>
+        <div class="conds">
+          <span class="cond-label">▶ 移行条件（全部満たしたら）</span>
+          <span class="cond-item">¥3万で1ヶ月継続</span>
+          <span class="cond-item">勝率40%以上</span>
+          <span class="cond-item">回復係数1.5以上</span>
+          <span class="cond-item">最大DD ¥120,000以内</span>
+          <span class="cond-item">エントリー遵守率60%以上</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow-row">↓</div>
+    <div class="stage stage-s2">
+      <div class="stage-left">
+        <div><div class="stage-name">STAGE 2</div><div class="stage-amount">¥50,000</div><div class="stage-sub">/ トレード</div></div>
+        <div class="stage-tag">STAGE 2</div>
+      </div>
+      <div class="stage-right">
+        <div class="metrics-row">
+          <div><div class="m-label">月平均利益合計</div><div class="m-val pos">+¥211,000</div></div>
+          <div><div class="m-label">月平均損失合計</div><div class="m-val neg">-¥120,000</div></div>
+          <div><div class="m-label">月純期待収益</div><div class="m-val pos">+¥91,000</div></div>
+          <div><div class="m-label">最大同時リスク</div><div class="m-val neg">¥200,000</div></div>
+        </div>
+        <div class="conds">
+          <span class="cond-label">▶ 移行条件（全部満たしたら）</span>
+          <span class="cond-item">Stage1で1ヶ月継続</span>
+          <span class="cond-item">勝率40%以上</span>
+          <span class="cond-item">回復係数2.0以上</span>
+          <span class="cond-item">最大DD ¥160,000以内</span>
+          <span class="cond-item">エントリー・決済遵守率65%以上</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow-row">↓</div>
+    <div class="stage stage-s3">
+      <div class="stage-left">
+        <div><div class="stage-name">STAGE 3 — 上限</div><div class="stage-amount">¥60,000</div><div class="stage-sub">/ トレード</div></div>
+        <div class="stage-tag">上限</div>
+      </div>
+      <div class="stage-right">
+        <div class="metrics-row">
+          <div><div class="m-label">月平均利益合計</div><div class="m-val pos">+¥253,000</div></div>
+          <div><div class="m-label">月平均損失合計</div><div class="m-val neg">-¥144,000</div></div>
+          <div><div class="m-label">月純期待収益</div><div class="m-val pos">+¥109,000</div></div>
+          <div><div class="m-label">最大同時リスク</div><div class="m-val neg">¥240,000</div></div>
+        </div>
+        <div class="conds">
+          <span class="cond-label">▶ 移行条件（Stage2を2ヶ月クリア後）</span>
+          <span class="cond-item">回復係数2.5以上×2ヶ月連続</span>
+          <span class="cond-item">最大DD ¥200,000以内</span>
+          <span class="cond-item">エントリー・決済遵守率70%以上</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="down-section">
+    <div class="down-title">DOWNGRADE — 1段階下げる条件</div>
+    <div class="down-items">
+      <span class="down-item">最大DDが資金の10%（¥200,000）超</span>
+      <span class="down-item">3連敗後にルール外エントリー</span>
+      <span class="down-item">決済遵守率50%割れ</span>
+      <span class="down-item">感情でリスク額を変えた</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">月平均損失 = 負け2.4回 × リスク額　／　月平均利益 = 実績比例換算　／　最大同時リスク = 4ポジ想定</div>
+    <div class="footer-date">2026.05</div>
+  </div>
+</div>
+
+<!-- PAGE 2: Roadmap -->
+<div id="page-roadmap" class="page">
+  <div class="page-header">
+    <div class="page-label">FX Annual Roadmap</div>
+    <div class="page-title">年間ロードマップ 2026</div>
+    <div class="page-sub">残り期間：6月〜12月（7ヶ月）　目標：月収での結果<br>1月データ基準：損失¥10,019 / 3月以降基準：損失¥15,000</div>
+  </div>
+
+  <div class="metric-strip">
+    <div class="metric-card"><div class="ml">残り期間</div><div class="mv">7ヶ月</div><div class="ms">6月〜12月</div></div>
+    <div class="metric-card"><div class="ml">月収（1月〜平均）</div><div class="mv green">¥18,166</div><div class="ms">損失基準¥10,019</div></div>
+    <div class="metric-card"><div class="ml">月収（3月以降）</div><div class="mv green">¥65,120</div><div class="ms">損失基準¥15,000</div></div>
+    <div class="metric-card"><div class="ml">スタートリスク</div><div class="mv">¥30,000</div><div class="ms">本日から</div></div>
+  </div>
+
+  <div class="plan-cards">
+    <div class="plan-card plan-card-a">
+      <div class="plan-label">PLAN A — 現実的</div>
+      <div class="plan-goal plan-goal-a">12月目標：¥109,000</div>
+      <div class="plan-desc">1月データ基準／条件厳守でステージアップ</div>
+      <div class="plan-row">
+        6月　¥30,000 → <strong>¥54,000</strong><br>
+        7月　条件確認 → Stage1へ<br>
+        8月　¥40,000 → <strong>¥73,000</strong><br>
+        9月　条件確認 → Stage2へ<br>
+        10月　¥50,000 → <strong>¥91,000</strong><br>
+        11月　条件確認 → Stage3へ<br>
+        12月　¥60,000 → <strong style="color:#1D9E75;">¥109,000</strong>
+      </div>
+    </div>
+    <div class="plan-card plan-card-b">
+      <div class="plan-label">PLAN B — 強気</div>
+      <div class="plan-goal plan-goal-b">12月目標：¥260,000</div>
+      <div class="plan-desc">3月以降データ基準／早期ステージアップ</div>
+      <div class="plan-row">
+        6月　¥30,000 → <strong>¥130,000</strong><br>
+        7月　即Stage1 ¥40,000へ<br>
+        8月　¥40,000 → <strong>¥174,000</strong><br>
+        9月　即Stage2 ¥50,000へ<br>
+        10月　¥50,000 → <strong>¥217,000</strong><br>
+        11月　即Stage3 ¥60,000へ<br>
+        12月　¥60,000 → <strong style="color:#378ADD;">¥260,000</strong>
+      </div>
+    </div>
+    <div class="plan-card plan-card-c">
+      <div class="plan-label">PLAN C — 勝負</div>
+      <div class="plan-goal plan-goal-c">12月目標：¥339,000</div>
+      <div class="plan-desc">遵守率改善×3月データ基準／理論値に近づける</div>
+      <div class="plan-row">
+        6〜7月　遵守率を80%台へ<br>
+        8月　¥50,000へ引き上げ → <strong>¥282,000</strong><br>
+        9月　遵守率維持確認<br>
+        10月　¥60,000 → <strong>¥339,000</strong><br>
+        11〜12月　¥60,000維持<br>
+        12月　→ <strong style="color:#EF9F27;">¥339,000</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-legend">
+    <span><span style="display:inline-block;width:20px;height:2px;background:#1D9E75;vertical-align:middle;margin-right:4px;"></span>Plan A（現実的）</span>
+    <span><span style="display:inline-block;width:20px;height:0;border-top:2px dashed #378ADD;vertical-align:middle;margin-right:4px;"></span>Plan B（強気）</span>
+    <span><span style="display:inline-block;width:20px;height:0;border-top:2px dotted #EF9F27;vertical-align:middle;margin-right:4px;"></span>Plan C（勝負）</span>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="roadmapChart" role="img" aria-label="6月から12月の月収推移 プランA・B・C比較">Plan A: 6月¥54,000→12月¥109,000 / Plan B: 6月¥130,000→12月¥260,000 / Plan C: 6月¥130,000→12月¥339,000</canvas>
+  </div>
+
+  <div class="note-box">
+    <strong>3プランの分岐点：</strong><br>
+    Plan Aは1月全体の保守的なデータ基準。Plan Bは3月以降の改善データを信じて早期ステージアップ。Plan Cはさらに遵守率80%台への改善を織り込み理論値に近づける前提。どれが現実になるかは遵守率次第。
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">Plan A月期待収益 = ¥18,166 × リスク倍率（÷¥10,019）<br>Plan B・C月期待収益 = ¥65,120 / ¥84,827 × リスク倍率（÷¥15,000）</div>
+    <div class="footer-date">2026.05</div>
+  </div>
+</div>
+
+<!-- PAGE 3: June Checkpoint -->
+<div id="page-june" class="page">
+  <div class="page-header">
+    <div class="page-label">June Checkpoint</div>
+    <div class="page-title">6月末 チェックポイント</div>
+    <div class="page-sub">¥30,000リスクで1ヶ月フル稼働　／　7月のステージ移行を判断する月</div>
+  </div>
+
+  <div class="jun-section">
+    <div class="jun-section-title">収支目標</div>
+    <div class="target-grid">
+      <div class="target-card">
+        <div class="tl">最低ライン</div>
+        <div class="tv-min">プラス</div>
+        <div class="ts">月収支がプラスで終わること</div>
+      </div>
+      <div class="target-card">
+        <div class="tl">理想ライン（1月データ）</div>
+        <div class="tv-ideal">¥54,000以上</div>
+        <div class="ts">¥30,000リスク × 1月基準</div>
+      </div>
+      <div class="target-card">
+        <div class="tl">理想ライン（3月データ）</div>
+        <div class="tv-ideal">¥130,000以上</div>
+        <div class="ts">¥30,000リスク × 3月基準</div>
+      </div>
+      <div class="target-card">
+        <div class="tl">絶対死守ライン</div>
+        <div class="tv-min">DD ¥120,000以内</div>
+        <div class="ts">資金の6%以内</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="jun-section">
+    <div class="jun-section-title">7月Stage1移行チェックリスト</div>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">勝率40%以上を維持できたか</div>
+          <div class="check-sub">月5回中2回以上の勝ち</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">回復係数1.5以上か</div>
+          <div class="check-sub">総利益 ÷ 最大DD ≥ 1.5</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">最大DDが¥120,000以内か</div>
+          <div class="check-sub">資金200万の6%以内</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">エントリー遵守率60%以上か</div>
+          <div class="check-sub">現在68.8%（3月以降）→ 維持が目標</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">決済遵守率65%以上か</div>
+          <div class="check-sub">現在56.3%（3月以降）→ ここが最重要課題</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="jun-section">
+    <div class="jun-section-title">6月に意識すること</div>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">毎トレード後に3項目を記録する</div>
+          <div class="check-sub">①エントリールール守ったか ②決済ルール守ったか ③破った場合の理由1行</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">¥30,000リスクの感覚を掴む</div>
+          <div class="check-sub">損切り時・含み損時・勝ち時の感情変化を日誌に残す</div>
+        </div>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">遵守率の目標：エントリー70% / 決済65%</div>
+          <div class="check-sub">特に決済遵守率を65%に上げることが7月以降の数字を決める</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="jun-section">
+    <div class="jun-section-title">やってはいけないこと</div>
+    <div class="ng-list">
+      <div class="ng-item">連敗したからといってリスク額を下げる</div>
+      <div class="ng-item">調子いいからといってルール外エントリー</div>
+      <div class="ng-item">「今月稼がないと」という焦りでトレード数を増やす</div>
+      <div class="ng-item">¥30,000が怖くて実質¥10,000のトレードをする（損切り幅を広げてロットを下げる）</div>
+      <div class="ng-item">感情でリスク額をその場で変える</div>
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <div class="sl">6月のテーマ</div>
+    <div class="sv">¥30,000リスクに慣れながら、遵守率を上げる1ヶ月。<br>収益額より遵守率。6月の遵守率が7月以降のステージを決める。</div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">全条件クリア → 7月からStage1（¥40,000）へ　／　1つでも未達 → ¥30,000継続</div>
+    <div class="footer-date">2026.05</div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'roadmap' && !window.chartDrawn) {
+    drawChart();
+    window.chartDrawn = true;
+  }
+}
+
+function drawChart() {
+  new Chart(document.getElementById('roadmapChart'), {
+    type: 'line',
+    data: {
+      labels: ['6月','7月','8月','9月','10月','11月','12月'],
+      datasets: [
+        { label: 'Plan A', data: [54000,54000,73000,73000,91000,91000,109000], borderColor: '#1D9E75', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#1D9E75', tension: 0.1, fill: false },
+        { label: 'Plan B', data: [130000,174000,174000,217000,217000,260000,260000], borderColor: '#378ADD', borderWidth: 2.5, borderDash: [8,4], pointRadius: 4, pointBackgroundColor: '#378ADD', tension: 0.1, fill: false },
+        { label: 'Plan C', data: [130000,170000,282000,282000,339000,339000,339000], borderColor: '#EF9F27', borderWidth: 2.5, borderDash: [3,3], pointRadius: 4, pointBackgroundColor: '#EF9F27', tension: 0.1, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + '：¥' + ctx.parsed.y.toLocaleString() } } },
+      scales: {
+        y: { min: 0, ticks: { callback: v => '¥' + Math.round(v/10000) + '万', color: '#888', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        x: { ticks: { color: '#888', font: { size: 11 }, autoSkip: false }, grid: { display: false } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
+HTMLEOF
+echo "done"
+出力
+
+done
